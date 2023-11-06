@@ -1,7 +1,50 @@
 import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native'
-import React, { useState } from 'react'
-const API_Screen_03 = () => {
+import React, { useEffect, useState } from 'react'
+import { AntDesign } from '@expo/vector-icons';
+
+const API_Screen_03 = ({ route, navigation }) => {
+    const [userName, setUser] = useState(route.params.userName)
     const [jobInput, setJobInput] = useState('');
+    const [userAvatar, setUserAvatar] = useState(null);
+
+    React.useLayoutEffect(() => {
+        navigation.setOptions({
+            headerTitle: '',
+            headerRight: () => (
+                <TouchableOpacity
+                    style={{ marginRight: 35 }}
+                    onPress={() => navigation.goBack()}
+                >
+                    <AntDesign name="arrowleft" size={24} color="#000" />
+                </TouchableOpacity>
+            ),
+            headerLeft: () => (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 35 }}>
+                    <Image
+                        source={{ uri: userAvatar }}
+                        style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10, backgroundColor: '#D9CBF6' }}
+                    />
+                    <View>
+                        <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Hi {userName}</Text>
+                        <Text style={{ opacity: 0.75, fontWeight: 700 }}>Have a grate day ahead</Text>
+                    </View>
+                </View>
+            )
+        });
+    }, [navigation, userName, userAvatar]);
+
+    useEffect(() => {
+        fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/userAvatar?userName=${userName}`)
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.length > 0) {
+                    setUserAvatar(data[0].avatar);
+                }
+            })
+            .catch((error) => {
+                console.error('Error fetching avatar:', error);
+            });
+    }, [userName]);
 
     const handleFinish = async () => {
         try {
@@ -10,7 +53,7 @@ const API_Screen_03 = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ job: jobInput }),
+                body: JSON.stringify({ userName: userName, job: jobInput }),
             });
 
             if (response.ok) {
@@ -25,7 +68,7 @@ const API_Screen_03 = () => {
     };
 
     return (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-around' }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-around', backgroundColor: '#fff' }}>
             <Text style={{ fontSize: 32, fontWeight: 700 }}>ADD YOUR JOB</Text>
             <View style={{ width: '100%', paddingHorizontal: 28 }}>
                 <Image

@@ -2,13 +2,41 @@ import { View, Text, Image, TextInput, FlatList, TouchableOpacity } from 'react-
 import React, { useEffect, useState } from 'react'
 import { AntDesign } from '@expo/vector-icons';
 
-const API_Screen_02 = () => {
+const API_Screen_02 = ({ route, navigation }) => {
+    const [userName, setUser] = useState(route.params.userName)
     const [notes, setNotes] = useState([]);
     const [currentEditedNoteId, setCurrentEditedNoteId] = useState(null);
     const [editedNoteText, setEditedNoteText] = useState('');
+    const [userAvatar, setUserAvatar] = useState(null);
+
+    React.useLayoutEffect(() => {
+        navigation.setOptions({
+            headerTitle: '',
+            headerRight: () => (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+                    <Image
+                        source={{ uri: userAvatar }}
+                        style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10, backgroundColor: '#D9CBF6' }}
+                    />
+                    <View>
+                        <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Hi {userName}</Text>
+                        <Text style={{ opacity: 0.75, fontWeight: 700 }}>Have a grate day ahead</Text>
+                    </View>
+                </View>
+            ),
+        });
+    }, [navigation, userName, userAvatar]);
 
     useEffect(() => {
-        fetch('https://654099fc45bedb25bfc2266a.mockapi.io/note')
+        const unsubscribe = navigation.addListener('focus', () => {
+            fetchNotes();
+        });
+
+        return unsubscribe;
+    }, []);
+
+    const fetchNotes = () => {
+        fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/note?userName=${userName}`)
             .then((response) => response.json())
             .then((data) => {
                 setNotes(data);
@@ -16,7 +44,30 @@ const API_Screen_02 = () => {
             .catch((error) => {
                 console.error('Error fetching data:', error);
             });
-    }, []);
+    };
+
+    useEffect(() => {
+
+        fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/note?userName=${userName}`)
+            .then((response) => response.json())
+            .then((data) => {
+                setNotes(data);
+            })
+            .catch((error) => {
+                console.error('Error fetching data:', error);
+            });
+
+        fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/userAvatar?userName=${userName}`)
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.length > 0) {
+                    setUserAvatar(data[0].avatar);
+                }
+            })
+            .catch((error) => {
+                console.error('Error fetching avatar:', error);
+            });
+    }, [userName]);
 
     const deleteNote = async (itemId) => {
         setNotes((prevNotes) => prevNotes.filter((note) => note.id !== itemId));
@@ -54,7 +105,7 @@ const API_Screen_02 = () => {
 
     return (
 
-        <View style={{ flex: 1, paddingHorizontal: 26 }}>
+        <View style={{ flex: 1, paddingHorizontal: 26, backgroundColor: '#fff' }}>
             <TextInput
                 placeholder='Search'
                 style={{
@@ -134,7 +185,9 @@ const API_Screen_02 = () => {
                         justifyContent: 'center',
                         alignItems: 'center',
                         marginVertical: 30
-                    }}>
+                    }}
+                    onPress={() => { navigation.navigate('screen03', { userName: userName }) }}
+                >
                     <AntDesign name="plus" size={30} color="#fff" />
                 </TouchableOpacity>
             </View>

@@ -2,7 +2,7 @@ import { View, Text, Image, TextInput, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 
 const API_Screen_01 = ({ route, navigation }) => {
-    const [user, setUser] = useState('')
+    const [userName, setuserName] = useState('Twinkle')
     return (
         <View style={{ flex: 1, justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 28, backgroundColor: "#fff" }}>
             <Image
@@ -19,7 +19,8 @@ const API_Screen_01 = ({ route, navigation }) => {
             <TextInput
                 style={{ borderWidth: 1, width: '100%', borderRadius: 4, paddingVertical: 9, paddingHorizontal: 16 }}
                 placeholder='Enter your name'
-                onChangeText={setUser} />
+                value={userName}
+                onChangeText={setuserName} />
             <TouchableOpacity
                 style={{
                     paddingVertical: 9,
@@ -27,7 +28,7 @@ const API_Screen_01 = ({ route, navigation }) => {
                     backgroundColor: '#00BDD6',
                     borderRadius: 12
                 }}
-                onPress={() => { navigation.navigate('screen02') }}
+                onPress={() => { navigation.navigate('screen02', { userName: userName }) }}
             >
                 <Text style={{ fontSize: 16, color: '#fff' }}>GET STARTED</Text>
             </TouchableOpacity>
