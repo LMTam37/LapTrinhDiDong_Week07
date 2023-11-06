@@ -5,7 +5,7 @@ import API_Screen_03 from './screen/API_Screen_03';
 
 export default function App() {
   return (
-    <API_Screen_03 />
+    <API_Screen_02 />
   );
 }
 
