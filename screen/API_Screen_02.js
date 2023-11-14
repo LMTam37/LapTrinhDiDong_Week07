@@ -3,11 +3,11 @@ import React, { useEffect, useState } from 'react'
 import { AntDesign } from '@expo/vector-icons';
 
 const API_Screen_02 = ({ route, navigation }) => {
-    const [userName, setUser] = useState(route.params.userName)
-    const [notes, setNotes] = useState([]);
+    const [user, setUser] = useState(route.params.user)
+    const [notes, setNotes] = useState(user?.jobs);
     const [currentEditedNoteId, setCurrentEditedNoteId] = useState(null);
     const [editedNoteText, setEditedNoteText] = useState('');
-    const [userAvatar, setUserAvatar] = useState(null);
+    const [searchValue, setSearchValue] = useState('');
 
     React.useLayoutEffect(() => {
         navigation.setOptions({
@@ -15,17 +15,17 @@ const API_Screen_02 = ({ route, navigation }) => {
             headerRight: () => (
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
                     <Image
-                        source={{ uri: userAvatar }}
+                        source={{ uri: user?.avatar }}
                         style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10, backgroundColor: '#D9CBF6' }}
                     />
                     <View>
-                        <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Hi {userName}</Text>
+                        <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Hi {user?.userName}</Text>
                         <Text style={{ opacity: 0.75, fontWeight: 700 }}>Have a grate day ahead</Text>
                     </View>
                 </View>
             ),
         });
-    }, [navigation, userName, userAvatar]);
+    }, [navigation, user]);
 
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
@@ -36,43 +36,27 @@ const API_Screen_02 = ({ route, navigation }) => {
     }, []);
 
     const fetchNotes = () => {
-        fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/note?userName=${userName}`)
+        fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/note?userName=${route.params.user.userName}`)
             .then((response) => response.json())
             .then((data) => {
-                setNotes(data);
+                setUser(data[0]);
+                setNotes(data[0].jobs)
             })
             .catch((error) => {
                 console.error('Error fetching data:', error);
             });
     };
 
-    useEffect(() => {
+    const deleteNote = async (jobId) => {
+        const updatedJobs = notes.filter((job) => job.job_id !== jobId);
+        setNotes(updatedJobs);
 
-        fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/note?userName=${userName}`)
-            .then((response) => response.json())
-            .then((data) => {
-                setNotes(data);
-            })
-            .catch((error) => {
-                console.error('Error fetching data:', error);
-            });
-
-        fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/userAvatar?userName=${userName}`)
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.length > 0) {
-                    setUserAvatar(data[0].avatar);
-                }
-            })
-            .catch((error) => {
-                console.error('Error fetching avatar:', error);
-            });
-    }, [userName]);
-
-    const deleteNote = async (itemId) => {
-        setNotes((prevNotes) => prevNotes.filter((note) => note.id !== itemId));
-        await fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/note/${itemId}`, {
-            method: 'DELETE',
+        await fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/note/${user.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ...user, jobs: updatedJobs }),
         });
     };
 
@@ -81,26 +65,45 @@ const API_Screen_02 = ({ route, navigation }) => {
             editNote(itemId, editedNoteText);
         } else {
             setCurrentEditedNoteId(itemId);
-            const editedNote = notes.find((note) => note.id === itemId);
-            setEditedNoteText(editedNote.job);
+            const editedNote = notes.find((job) => job.job_id === itemId);
+            setEditedNoteText(editedNote.job_name);
         }
     };
 
     const editNote = async (itemId, newText) => {
-        await fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/note/${itemId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ job: newText }),
-        });
-
+        let newNotes;
         setNotes((prevNotes) =>
-            prevNotes.map((note) => (note.id === itemId ? { ...note, job: newText } : note))
+            newNotes = prevNotes.map((note) =>
+                note.job_id === itemId ? { ...note, job_name: newText } : note
+            )
         );
 
-
         setCurrentEditedNoteId(null);
+
+        try {
+            const response = await fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/note/${user.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ...user, jobs: newNotes }),
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const searchNotes = (text) => {
+        setSearchValue(text);
+
+        if (text.trim() === '') {
+            setNotes(user?.jobs);
+        } else {
+            const filteredNotes = user?.jobs.filter((note) =>
+                note.job_name.toLowerCase().includes(text.toLowerCase())
+            );
+            setNotes(filteredNotes);
+        }
     };
 
     return (
@@ -114,12 +117,14 @@ const API_Screen_02 = ({ route, navigation }) => {
                     paddingVertical: 10,
                     marginBottom: 100
                 }}
+                value={searchValue}
+                onChangeText={searchNotes}
             />
             <View style={{ width: '100%', alignItems: 'center', }}>
                 <FlatList
                     style={{ width: '100%', }}
                     data={notes}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item.job_id}
                     ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
                     renderItem={({ item }) => (
                         <View
@@ -130,7 +135,7 @@ const API_Screen_02 = ({ route, navigation }) => {
                                 paddingHorizontal: 50,
                                 borderRadius: 24
                             }}>
-                            <TouchableOpacity onPress={() => deleteNote(item.id)}>
+                            <TouchableOpacity onPress={() => deleteNote(item.job_id)}>
                                 <Image
                                     source={require('../assets/Frame (1).png')}
                                     style={{
@@ -149,20 +154,20 @@ const API_Screen_02 = ({ route, navigation }) => {
                                     fontWeight: 700,
                                     width: '100%',
                                     paddingVertical: 1,
-                                    borderWidth: currentEditedNoteId === item.id ? 1 : 0
+                                    borderWidth: currentEditedNoteId === item.job_id ? 1 : 0
                                 }}
-                                value={currentEditedNoteId === item.id ? editedNoteText : item.job}
+                                value={currentEditedNoteId === item.job_id ? editedNoteText : item.job_name}
                                 onChangeText={(text) => {
-                                    if (currentEditedNoteId !== item.id) {
-                                        setCurrentEditedNoteId(item.id);
+                                    if (currentEditedNoteId !== item.job_id) {
+                                        setCurrentEditedNoteId(item.job_id);
                                     }
                                     setEditedNoteText(text);
                                 }}
-                                autoFocus={currentEditedNoteId === item.id}
-                                editable={currentEditedNoteId === item.id}
+                                autoFocus={currentEditedNoteId === item.job_id}
+                                editable={currentEditedNoteId === item.job_id}
                             />
 
-                            <TouchableOpacity onPress={() => toggleEditMode(item.id)}>
+                            <TouchableOpacity onPress={() => toggleEditMode(item.job_id)}>
                                 <Image
                                     source={require('../assets/Frame (2).png')}
                                     style={{
@@ -186,7 +191,7 @@ const API_Screen_02 = ({ route, navigation }) => {
                         alignItems: 'center',
                         marginVertical: 30
                     }}
-                    onPress={() => { navigation.navigate('screen03', { userName: userName }) }}
+                    onPress={() => { navigation.navigate('screen03', { user: user }) }}
                 >
                     <AntDesign name="plus" size={30} color="#fff" />
                 </TouchableOpacity>

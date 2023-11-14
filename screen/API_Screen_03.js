@@ -3,9 +3,8 @@ import React, { useEffect, useState } from 'react'
 import { AntDesign } from '@expo/vector-icons';
 
 const API_Screen_03 = ({ route, navigation }) => {
-    const [userName, setUser] = useState(route.params.userName)
+    const [user, setUser] = useState(route.params.user)
     const [jobInput, setJobInput] = useState('');
-    const [userAvatar, setUserAvatar] = useState(null);
 
     React.useLayoutEffect(() => {
         navigation.setOptions({
@@ -21,50 +20,45 @@ const API_Screen_03 = ({ route, navigation }) => {
             headerLeft: () => (
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 35 }}>
                     <Image
-                        source={{ uri: userAvatar }}
+                        source={{ uri: user.avatar }}
                         style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10, backgroundColor: '#D9CBF6' }}
                     />
                     <View>
-                        <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Hi {userName}</Text>
+                        <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Hi {user.userName}</Text>
                         <Text style={{ opacity: 0.75, fontWeight: 700 }}>Have a grate day ahead</Text>
                     </View>
                 </View>
             )
         });
-    }, [navigation, userName, userAvatar]);
+    }, [navigation, user]);
 
-    useEffect(() => {
-        fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/userAvatar?userName=${userName}`)
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.length > 0) {
-                    setUserAvatar(data[0].avatar);
-                }
-            })
-            .catch((error) => {
-                console.error('Error fetching avatar:', error);
-            });
-    }, [userName]);
+    const addJob = async (newJob) => {
+        const updatedUser = { ...user, jobs: [...user.jobs, newJob] };
 
-    const handleFinish = async () => {
-        try {
-            const response = await fetch('https://654099fc45bedb25bfc2266a.mockapi.io/note', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ userName: userName, job: jobInput }),
-            });
+        setUser(updatedUser);
 
-            if (response.ok) {
-                setJobInput('');
-                alert('Job added successfully!');
-            } else {
-                alert('Failed to add job');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
+        await fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/note/${user.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updatedUser),
+        });
+    };
+
+    const handleAddJob = async () => {
+        const lastJob = user.jobs[user.jobs.length - 1];
+
+        const newJobId = lastJob ? lastJob.job_id + 1 : 1;
+
+        const newJob = {
+            job_id: newJobId,
+            job_name: jobInput,
+        };
+
+        addJob(newJob);
+
+        setJobInput('');
     };
 
     return (
@@ -103,7 +97,7 @@ const API_Screen_03 = ({ route, navigation }) => {
                     paddingHorizontal: 60,
                     borderRadius: 12
                 }}
-                onPress={handleFinish}
+                onPress={handleAddJob}
             >
                 <Text style={{ fontSize: 16, color: "#fff" }}>FINISH</Text>
             </TouchableOpacity>

@@ -3,6 +3,31 @@ import React, { useState } from 'react'
 
 const API_Screen_01 = ({ route, navigation }) => {
     const [userName, setuserName] = useState('Twinkle')
+    const [user, setUser] = useState([])
+
+    const handleGetStarted = async () => {
+        const userData = await fetchNotes(userName);
+        setUser(userData);
+
+        if (userData) {
+            console.log(userData);
+            navigation.navigate('screen02', { user: userData });
+        } else {
+            console.log('User not found');
+        }
+    };
+
+    const fetchNotes = async (userName) => {
+        try {
+            const response = await fetch(`https://654099fc45bedb25bfc2266a.mockapi.io/note?userName=${userName}`);
+            const data = await response.json();
+            return data.length > 0 ? data[0] : null;
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            return null;
+        }
+    };
+
     return (
         <View style={{ flex: 1, justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 28, backgroundColor: "#fff" }}>
             <Image
@@ -28,7 +53,7 @@ const API_Screen_01 = ({ route, navigation }) => {
                     backgroundColor: '#00BDD6',
                     borderRadius: 12
                 }}
-                onPress={() => { navigation.navigate('screen02', { userName: userName }) }}
+                onPress={handleGetStarted}
             >
                 <Text style={{ fontSize: 16, color: '#fff' }}>GET STARTED</Text>
             </TouchableOpacity>
